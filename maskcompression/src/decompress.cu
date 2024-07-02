@@ -9,6 +9,25 @@ namespace maskcompression
 
 namespace detail
 {
+
+template<typename T>
+inline __device__ uint32_t
+binary_search(const torch::PackedTensorAccessor32<T, 1, torch::RestrictPtrTraits> sorted_array, T value)
+{
+    // Find first element in sorted_array that is larger than value.
+    uint32_t left  = 0;
+    uint32_t right = sorted_array.size(0) - 1;
+    while(left < right)
+    {
+        uint32_t mid = (left + right) / 2;
+        if(sorted_array[mid] < value)
+            left = mid + 1;
+        else
+            right = mid;
+    }
+    return left;
+}
+
 __global__ void decompressImage(const torch::PackedTensorAccessor32<int32_t, 1, torch::RestrictPtrTraits> cumsum,
                                 const uint32_t width,
                                 const uint32_t height,
@@ -16,12 +35,14 @@ __global__ void decompressImage(const torch::PackedTensorAccessor32<int32_t, 1, 
 {
     auto id = static_cast<int64_t>(blockIdx.x) * static_cast<int64_t>(blockDim.x) + static_cast<int64_t>(threadIdx.x);
     auto num_threads = static_cast<int64_t>(gridDim.x) * static_cast<int64_t>(blockDim.x);
-    for(auto tid = id; tid < width * height; tid += num_threads)
+    for(int32_t tid = id; tid < width * height; tid += num_threads)
     {
         int pixel_x = tid % width;
         int pixel_y = tid / width;
 
-        output[pixel_y][pixel_x] = 1.0f;
+        uint32_t bin_index = binary_search(cumsum, tid);
+
+        output[pixel_y][pixel_x] = bin_index % 2 == 0 ? 0.0f : 1.0f;
     }
 }
 }    // namespace detail
