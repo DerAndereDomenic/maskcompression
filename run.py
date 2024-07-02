@@ -26,8 +26,7 @@ mask = torch.from_numpy(mask)
 mask[(mask > 0) & (mask < 255)] = 255
 
 compressed = torch.unique_consecutive(mask.flatten(), return_counts=True)[1].to(torch.int32).to("cuda")
-
-print(compressed)
+compressed.unsqueeze_(0)
 
 # warmup
 for i in range(10):
@@ -40,9 +39,16 @@ for i in range(n):
     decompressed = maskcompression.decompress(compressed, (mask.shape[0], mask.shape[1]))
 end = time.time()
 
-print(f"{(end - start) * 1000.} ms")
+print(f"Single: {(end - start) * 1000.} ms")
 
-decompressed = decompressed.cpu()
+compressed = compressed.repeat(n, 1)
+start = time.time()
+decompressed = maskcompression.decompress(compressed, (mask.shape[0], mask.shape[1]))
+end = time.time()
+
+print(f"Batched: {(end - start) * 1000.} ms")
+
+decompressed = decompressed[0].cpu()
 
 plt.imshow(mask)
 plt.show()
