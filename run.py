@@ -23,7 +23,7 @@ mask = torch.from_numpy(mask)
 
 mask[(mask > 0) & (mask < 255)] = 255
 
-compressed = torch.unique_consecutive(mask.flatten(), return_counts=True)[1].to(torch.int32)
+compressed = torch.unique_consecutive(mask.flatten(), return_counts=True)[1].to(torch.int32).to("cuda")
 
 print(compressed)
 
