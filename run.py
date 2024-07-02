@@ -26,3 +26,7 @@ mask[(mask > 0) & (mask < 255)] = 255
 compressed = torch.unique_consecutive(mask.flatten(), return_counts=True)[1].to(torch.int32)
 
 print(compressed)
+
+decompressed = maskcompression.decompress(compressed, (mask.shape[0], mask.shape[1]))
+
+print(decompressed)
