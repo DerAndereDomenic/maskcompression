@@ -65,7 +65,7 @@ torch::Tensor decompress(const std::vector<torch::Tensor>& compressed, at::IntAr
 
     for(int batch_id = 0; batch_id < batch_size; ++batch_id)
     {
-        auto cumsum = torch::cumsum(compressed[batch_id], 0).to(torch::kInt32);    // TODO: copy
+        auto cumsum = compressed[batch_id];
         detail::decompressImage<<<grid, threads, 0, stream>>>(
             cumsum.packed_accessor32<int32_t, 1, torch::RestrictPtrTraits>(),
             batch_id,
