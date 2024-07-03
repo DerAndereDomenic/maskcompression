@@ -4,5 +4,5 @@
 
 namespace maskcompression
 {
-torch::Tensor decompress(const torch::Tensor& compressed, at::IntArrayRef& resolution);
+torch::Tensor decompress(const std::vector<torch::Tensor>& compressed, at::IntArrayRef& resolution);
 }

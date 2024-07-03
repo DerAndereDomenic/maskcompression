@@ -11,7 +11,7 @@ namespace detail
 {
 
 inline __device__ uint32_t
-binary_search(const at::TensorAccessor<int32_t, 1, torch::RestrictPtrTraits, int> sorted_array, int32_t value)
+binary_search(const torch::PackedTensorAccessor32<int32_t, 1, torch::RestrictPtrTraits>& sorted_array, int32_t value)
 {
     // Find first element in sorted_array that is larger than value.
     uint32_t left  = 0;
@@ -27,7 +27,8 @@ binary_search(const at::TensorAccessor<int32_t, 1, torch::RestrictPtrTraits, int
     return left;
 }
 
-__global__ void decompressImage(const torch::PackedTensorAccessor32<int32_t, 2, torch::RestrictPtrTraits> cumsum,
+__global__ void decompressImage(const torch::PackedTensorAccessor32<int32_t, 1, torch::RestrictPtrTraits> cumsum,
+                                const uint32_t batch_id,
                                 const uint32_t width,
                                 const uint32_t height,
                                 torch::PackedTensorAccessor32<float, 3, torch::RestrictPtrTraits> output)
@@ -39,21 +40,18 @@ __global__ void decompressImage(const torch::PackedTensorAccessor32<int32_t, 2, 
         int pixel_x = tid % width;
         int pixel_y = tid / width;
 
-        for(int i = 0; i < cumsum.size(0); ++i)
-        {
-            uint32_t bin_index = binary_search(cumsum[i], tid + 1);
+        uint32_t bin_index = binary_search(cumsum, tid + 1);
 
-            output[i][pixel_y][pixel_x] = (bin_index & 1) ? 1.0f : 0.0f;
-        }
+        output[batch_id][pixel_y][pixel_x] = (bin_index & 1) ? 1.0f : 0.0f;
     }
 }
 }    // namespace detail
 
-torch::Tensor decompress(const torch::Tensor& compressed, at::IntArrayRef& resolution)
+torch::Tensor decompress(const std::vector<torch::Tensor>& compressed, at::IntArrayRef& resolution)
 {
-    torch::Tensor output = torch::zeros({compressed.size(0), resolution[0], resolution[1]},
+    int batch_size       = compressed.size();
+    torch::Tensor output = torch::zeros({batch_size, resolution[0], resolution[1]},
                                         torch::TensorOptions {}.dtype(torch::kFloat32).device(torch::kCUDA));
-    auto cumsum          = torch::cumsum(compressed, 1).to(torch::kInt32);    // TODO: copy
 
     auto device = output.device();
 
@@ -65,11 +63,16 @@ torch::Tensor decompress(const torch::Tensor& compressed, at::IntArrayRef& resol
     at::cuda::getApplyGrid(resolution[0] * resolution[1], grid, device.index(), threads_per_block);
     dim3 threads = at::cuda::getApplyBlock(threads_per_block);
 
-    detail::decompressImage<<<grid, threads, 0, stream>>>(
-        cumsum.packed_accessor32<int32_t, 2, torch::RestrictPtrTraits>(),
-        resolution[1],
-        resolution[0],
-        output.packed_accessor32<float, 3, torch::RestrictPtrTraits>());
+    for(int batch_id = 0; batch_id < batch_size; ++batch_id)
+    {
+        auto cumsum = torch::cumsum(compressed[batch_id], 0).to(torch::kInt32);    // TODO: copy
+        detail::decompressImage<<<grid, threads, 0, stream>>>(
+            cumsum.packed_accessor32<int32_t, 1, torch::RestrictPtrTraits>(),
+            batch_id,
+            resolution[1],
+            resolution[0],
+            output.packed_accessor32<float, 3, torch::RestrictPtrTraits>());
+    }
 
     AT_CUDA_CHECK(cudaGetLastError());
     AT_CUDA_CHECK(cudaStreamSynchronize(stream));

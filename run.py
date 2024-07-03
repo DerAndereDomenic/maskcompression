@@ -29,32 +29,31 @@ for filename in os.listdir(dir):
     mask[(mask > 0) & (mask < 255)] = 255
 
     compressed = torch.unique_consecutive(mask.flatten(), return_counts=True)[1].to(torch.int32).to("cuda")
-    compressed.unsqueeze_(0)
 
     compressed_masks.append(compressed)
     masks.append(mask.to("cuda").to(torch.float32) / 255.)
 
     jpeg_sizes.append(os.stat(os.path.join(dir, filename)).st_size)
-    compressed_sizes.append(compressed.shape[1] * 4)
+    compressed_sizes.append(compressed.shape[0] * 4)
 
+masks = torch.stack(masks)
 
 # warmup
 for i in range(10):
-    decompressed = maskcompression.decompress(compressed_masks[i], (masks[i].shape[0], masks[i].shape[1]))
+    decompressed = maskcompression.decompress([torch.zeros_like(compressed) for compressed in compressed_masks], (mask.shape[0], mask.shape[1]))
 
-decompressed_masks = []
-start = time.time()
-for compressed in compressed_masks:
-    decompressed = maskcompression.decompress(compressed, (masks[0].shape[0], masks[0].shape[1]))
-    decompressed_masks.append(decompressed)
-end = time.time()
+start = torch.cuda.Event(enable_timing=True)
+end = torch.cuda.Event(enable_timing=True)
 
-print(f"Single: {(end - start) * 1000.} ms")
+start.record()
+decompressed_masks = maskcompression.decompress(compressed_masks, (mask.shape[0], mask.shape[1]))
+end.record()
 
-total_error = 0.0
+torch.cuda.synchronize()
+print("Elapsed time:", start.elapsed_time(end), "ms")
 
-for mask1, mask2 in zip(masks, decompressed_masks):
-    total_error += torch.mean((mask1 - mask2.squeeze_(0))**2)
+
+total_error = torch.sum((decompressed_masks - masks)**2)
 
 print("Reconstruction error:", total_error.item())
 print("Mean compression ratio:", np.mean(np.array(compressed_sizes) / np.array(jpeg_sizes)))
