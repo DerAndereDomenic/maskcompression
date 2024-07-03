@@ -43,7 +43,7 @@ __global__ void decompressImage(const torch::PackedTensorAccessor32<int32_t, 2, 
         {
             uint32_t bin_index = binary_search(cumsum[i], tid + 1);
 
-            output[i][pixel_y][pixel_x] = bin_index % 2 == 0 ? 0.0f : 1.0f;
+            output[i][pixel_y][pixel_x] = (bin_index & 1) ? 1.0f : 0.0f;
         }
     }
 }
