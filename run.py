@@ -14,49 +14,40 @@ import cv2
 import maskcompression
 import matplotlib.pyplot as plt
 import time
+import os
 
-def compress_mask(mask : torch.Tensor) -> torch.Tensor:
-    compressed = torch.unique_consecutive(mask.flatten(), return_counts=True)[1].to(torch.int32)
-    return compressed
 
-mask = cv2.imread("C:/Users/zingsheim/Documents/Repositories/VCI_data/Test2/mask_00_15.png", 0)
+compressed_masks = []
+masks = []
+dir = "C:/Users/zingsheim/Documents/Repositories/VCI_data/dance_vci_simulator_v3/frame_00015/mask"
+for filename in os.listdir(dir):
+    mask = cv2.imread(os.path.join(dir, filename), 0)
+    mask = torch.from_numpy(mask)
+    mask[(mask > 0) & (mask < 255)] = 255
 
-mask = torch.from_numpy(mask)
+    compressed = torch.unique_consecutive(mask.flatten(), return_counts=True)[1].to(torch.int32).to("cuda")
+    compressed.unsqueeze_(0)
 
-mask[(mask > 0) & (mask < 255)] = 255
+    compressed_masks.append(compressed)
+    masks.append(mask.to("cuda").to(torch.float32) / 255.)
 
-compressed = torch.unique_consecutive(mask.flatten(), return_counts=True)[1].to(torch.int32).to("cuda")
-compressed.unsqueeze_(0)
 
 # warmup
 for i in range(10):
-    decompressed = maskcompression.decompress(compressed, (mask.shape[0], mask.shape[1]))
+    decompressed = maskcompression.decompress(compressed_masks[i], (masks[i].shape[0], masks[i].shape[1]))
 
-n = 40
-
+decompressed_masks = []
 start = time.time()
-for i in range(n):
-    decompressed = maskcompression.decompress(compressed, (mask.shape[0], mask.shape[1]))
+for compressed in compressed_masks:
+    decompressed = maskcompression.decompress(compressed, (masks[0].shape[0], masks[0].shape[1]))
+    decompressed_masks.append(decompressed)
 end = time.time()
 
 print(f"Single: {(end - start) * 1000.} ms")
 
-compressed = compressed.repeat(n, 1)
-start = time.time()
-decompressed = maskcompression.decompress(compressed, (mask.shape[0], mask.shape[1]))
-end = time.time()
+total_error = 0.0
 
-print(f"Batched: {(end - start) * 1000.} ms")
+for mask1, mask2 in zip(masks, decompressed_masks):
+    total_error += torch.mean((mask1 - mask2.squeeze_(0))**2)
 
-decompressed = decompressed[0].cpu()
-
-plt.imshow(mask)
-plt.show()
-
-plt.imshow(decompressed)
-plt.show()
-
-difference = mask.to(torch.float32) / 255. - decompressed
-
-plt.imshow(difference.cpu())
-plt.show()
+print("Reconstruction error:", total_error.item())
