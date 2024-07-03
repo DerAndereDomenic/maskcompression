@@ -15,10 +15,13 @@ import maskcompression
 import matplotlib.pyplot as plt
 import time
 import os
+import numpy as np
 
 
 compressed_masks = []
 masks = []
+jpeg_sizes = []
+compressed_sizes = []
 dir = "C:/Users/zingsheim/Documents/Repositories/VCI_data/dance_vci_simulator_v3/frame_00015/mask"
 for filename in os.listdir(dir):
     mask = cv2.imread(os.path.join(dir, filename), 0)
@@ -30,6 +33,9 @@ for filename in os.listdir(dir):
 
     compressed_masks.append(compressed)
     masks.append(mask.to("cuda").to(torch.float32) / 255.)
+
+    jpeg_sizes.append(os.stat(os.path.join(dir, filename)).st_size)
+    compressed_sizes.append(compressed.shape[1] * 4)
 
 
 # warmup
@@ -51,3 +57,4 @@ for mask1, mask2 in zip(masks, decompressed_masks):
     total_error += torch.mean((mask1 - mask2.squeeze_(0))**2)
 
 print("Reconstruction error:", total_error.item())
+print("Mean compression ratio:", np.mean(np.array(compressed_sizes) / np.array(jpeg_sizes)))
