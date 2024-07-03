@@ -18,25 +18,28 @@ import os
 import numpy as np
 
 
-compressed_masks = []
 masks = []
 jpeg_sizes = []
 compressed_sizes = []
 dir = "C:/Users/zingsheim/Documents/Repositories/VCI_data/dance_vci_simulator_v3/frame_00015/mask"
 for filename in os.listdir(dir):
+    if filename[-4:] != "jpeg":
+            continue
+
     mask = cv2.imread(os.path.join(dir, filename), 0)
     mask = torch.from_numpy(mask)
-    mask[(mask > 0) & (mask < 255)] = 255
+    mask = torch.where(mask > 127, 255, 0)
 
-    compressed = torch.unique_consecutive(mask.flatten(), return_counts=True)[1].to(torch.int32).to("cuda")
-
-    compressed_masks.append(compressed)
     masks.append(mask.to("cuda").to(torch.float32) / 255.)
 
     jpeg_sizes.append(os.stat(os.path.join(dir, filename)).st_size)
-    compressed_sizes.append(compressed.shape[0] * 4)
 
 masks = torch.stack(masks)
+
+compressed_masks = maskcompression.compress(masks)
+
+for compressed in compressed_masks:
+    compressed_sizes.append(len(compressed) * 4)
 
 # warmup
 for i in range(10):
@@ -57,3 +60,6 @@ total_error = torch.sum((decompressed_masks - masks)**2)
 
 print("Reconstruction error:", total_error.item())
 print("Mean compression ratio:", np.mean(np.array(compressed_sizes) / np.array(jpeg_sizes)))
+
+plt.imshow(decompressed_masks[0].cpu())
+plt.show()
