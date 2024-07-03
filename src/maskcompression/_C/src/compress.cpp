@@ -1,4 +1,4 @@
-#include "compress.h"
+#include <maskcompression/compress.h>
 
 namespace maskcompression
 {

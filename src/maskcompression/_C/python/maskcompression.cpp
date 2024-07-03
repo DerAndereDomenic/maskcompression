@@ -1,7 +1,7 @@
 #include <torch/python.h>
 
-#include "decompress.h"
-#include "compress.h"
+#include <maskcompression/decompress.h>
+#include <maskcompression/compress.h>
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m)
 {

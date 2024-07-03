@@ -1,4 +1,4 @@
-#include "decompress.h"
+#include <maskcompression/decompress.h>
 
 #include <ATen/cuda/ApplyGridUtils.cuh>
 #include <c10/cuda/CUDAGuard.h>
