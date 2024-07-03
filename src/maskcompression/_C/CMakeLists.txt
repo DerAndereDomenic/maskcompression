@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.27)
 
 project(maskcompression LANGUAGES C CXX CUDA VERSION 1.0)
 
+option(MASKCOMPRESSION_BUILD_BINDINGS "Build the Python bindings" ON)
+
 find_package(charonload)
 
 if(charonload_FOUND)
@@ -13,9 +15,11 @@ if(charonload_FOUND)
 
     target_include_directories(maskcompression_cpp PUBLIC include)
 
-    charonload_add_torch_library(${TORCH_EXTENSION_NAME} MODULE)
+    if(MASKCOMPRESSION_BUILD_BINDINGS)
+        charonload_add_torch_library(${TORCH_EXTENSION_NAME} MODULE)
 
-    target_sources(${TORCH_EXTENSION_NAME} PRIVATE python/maskcompression.cpp)
+        target_sources(${TORCH_EXTENSION_NAME} PRIVATE python/maskcompression.cpp)
 
-    target_link_libraries(${TORCH_EXTENSION_NAME} PRIVATE maskcompression_cpp)
+        target_link_libraries(${TORCH_EXTENSION_NAME} PRIVATE maskcompression_cpp)
+    endif()
 endif()
