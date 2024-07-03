@@ -14,7 +14,7 @@ inline __device__ uint32_t
 binary_search(const torch::PackedTensorAccessor32<int32_t, 1, torch::RestrictPtrTraits>& sorted_array, int32_t value)
 {
     // Find first element in sorted_array that is larger than value.
-    uint32_t left  = 0;
+    uint32_t left  = 1;    // Start at 1 because index 0 encodes if the mask starts with 0 or 1
     uint32_t right = sorted_array.size(0) - 1;
     while(left < right)
     {
@@ -40,9 +40,12 @@ __global__ void decompressImage(const torch::PackedTensorAccessor32<int32_t, 1, 
         int pixel_x = tid % width;
         int pixel_y = tid / width;
 
-        uint32_t bin_index = binary_search(cumsum, tid + 1);
+        uint32_t bin_index =
+            binary_search(cumsum, tid + 1) - 1;    // -1 because index 0 encodes if the mask starts with 0 or 1
 
-        output[batch_id][pixel_y][pixel_x] = (bin_index & 1) ? 1.0f : 0.0f;
+        int32_t leading_one = cumsum[0];
+
+        output[batch_id][pixel_y][pixel_x] = ((bin_index + leading_one) & 1) ? 1.0f : 0.0f;
     }
 }
 }    // namespace detail
