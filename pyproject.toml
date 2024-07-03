@@ -1,0 +1,12 @@
+[project]
+name = "maskcompression"
+version = "0.0.1"
+authors = [{ name = "Domenic Zingsheim", email = "zingsheim@cs.uni-bonn.de" }]
+description = ""
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = ["torch", "numpy", "charonload"]
+
+[build-system]
+requires = ["setuptools>=64.0"]
+build-backend = "setuptools.build_meta"

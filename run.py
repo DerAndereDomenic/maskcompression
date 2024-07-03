@@ -1,19 +1,7 @@
-import charonload
-import pathlib
-
-VSCODE_STUBS_DIRECTORY = pathlib.Path(__file__).parent / "typings"
-
-charonload.module_config["maskcompression"] = charonload.Config(
-    project_directory=pathlib.Path(__file__).parent / "src/maskcompression/_C",
-    build_directory=pathlib.Path(__file__).parent / "build",  # optional
-    stubs_directory=VSCODE_STUBS_DIRECTORY,  # optional
-)
-
 import torch
 import cv2
 import maskcompression
 import matplotlib.pyplot as plt
-import time
 import os
 import numpy as np
 
