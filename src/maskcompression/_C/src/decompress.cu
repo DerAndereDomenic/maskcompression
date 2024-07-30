@@ -31,7 +31,7 @@ __global__ void decompressImage(const torch::PackedTensorAccessor32<int32_t, 1, 
                                 const uint32_t batch_id,
                                 const uint32_t width,
                                 const uint32_t height,
-                                torch::PackedTensorAccessor32<float, 3, torch::RestrictPtrTraits> output)
+                                torch::PackedTensorAccessor32<uint8_t, 3, torch::RestrictPtrTraits> output)
 {
     auto id = static_cast<int64_t>(blockIdx.x) * static_cast<int64_t>(blockDim.x) + static_cast<int64_t>(threadIdx.x);
     auto num_threads = static_cast<int64_t>(gridDim.x) * static_cast<int64_t>(blockDim.x);
@@ -45,7 +45,7 @@ __global__ void decompressImage(const torch::PackedTensorAccessor32<int32_t, 1, 
 
         int32_t leading_one = cumsum[0];
 
-        output[batch_id][pixel_y][pixel_x] = ((bin_index + leading_one) & 1) ? 1.0f : 0.0f;
+        output[batch_id][pixel_y][pixel_x] = ((bin_index + leading_one) & 1) ? 1 : 0;
     }
 }
 }    // namespace detail
@@ -54,7 +54,7 @@ torch::Tensor decompress(const std::vector<torch::Tensor>& compressed, const std
 {
     int batch_size       = compressed.size();
     torch::Tensor output = torch::zeros({batch_size, resolution[0], resolution[1]},
-                                        torch::TensorOptions {}.dtype(torch::kFloat32).device(torch::kCUDA));
+                                        torch::TensorOptions {}.dtype(torch::kUInt8).device(torch::kCUDA));
 
     auto device = output.device();
 
@@ -74,7 +74,7 @@ torch::Tensor decompress(const std::vector<torch::Tensor>& compressed, const std
             batch_id,
             resolution[1],
             resolution[0],
-            output.packed_accessor32<float, 3, torch::RestrictPtrTraits>());
+            output.packed_accessor32<uint8_t, 3, torch::RestrictPtrTraits>());
     }
 
     AT_CUDA_CHECK(cudaGetLastError());
