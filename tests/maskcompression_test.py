@@ -26,7 +26,7 @@ def create_mask():
         x2 = min(x1 + box_width, width)
         y2 = min(y1 + box_height, height)
 
-        mask[y1:y2, x1:x2] = 255
+        mask[y1:y2, x1:x2] = 1
 
     return mask
 

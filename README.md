@@ -20,7 +20,7 @@ masks = generate_masks() # (B,H,W), device=cuda
 compressed = maskcompression.compress(masks) # list(torch.Tensor)
 decompressed = maskcompression.decompress(compressed, 
                                           resolution, 
-                                          vertical_flip=False) # (B,H,W), device=cuda, dtype=uint8, foreground=255
+                                          vertical_flip=False) # (B,H,W), device=cuda, dtype=uint8, foreground=1
 ```
 
 ## Contact

@@ -46,7 +46,7 @@ __global__ void decompressImage(const torch::PackedTensorAccessor32<int32_t, 1, 
 
         int32_t leading_one = cumsum[0];
 
-        output[batch_id][pixel_y][pixel_x] = ((bin_index + leading_one) & 1) ? 255 : 0;
+        output[batch_id][pixel_y][pixel_x] = ((bin_index + leading_one) & 1) ? 1 : 0;
     }
 }
 }    // namespace detail
