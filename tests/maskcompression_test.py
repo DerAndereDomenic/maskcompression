@@ -130,3 +130,26 @@ def test_wrong_dtype():
         compressed[i] = compressed[i].to(torch.float32)
     with pytest.raises(RuntimeError):
         _ = maskcompression.decompress(compressed, (masks.shape[1], masks.shape[2]))
+
+
+def test_wrong_resolution():
+    num_masks = 15
+    masks = []
+    for _ in range(num_masks):
+        masks.append(create_mask())
+
+    masks = torch.stack(masks, dim=0)
+
+    compressed = maskcompression.compress(masks)
+
+    with pytest.raises(RuntimeError):
+        _ = maskcompression.decompress(compressed, (1, 0))
+
+    with pytest.raises(RuntimeError):
+        _ = maskcompression.decompress(compressed, (0, 1))
+
+    with pytest.raises(RuntimeError):
+        _ = maskcompression.decompress(compressed, (-1, 1))
+
+    with pytest.raises(RuntimeError):
+        _ = maskcompression.decompress(compressed, (1, -1))

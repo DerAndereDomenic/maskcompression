@@ -52,6 +52,13 @@ __global__ void decompressImage(const torch::PackedTensorAccessor32<int32_t, 1, 
 
 torch::Tensor decompress(const std::vector<torch::Tensor>& compressed, const std::array<int, 2>& resolution)
 {
+    if(resolution[0] <= 0 || resolution[1] <= 1)
+    {
+        std::stringstream ss;
+        ss << "Got invalid input resolution: " << resolution[0] << ", " << resolution[1];
+        throw std::runtime_error(ss.str());
+    }
+
     int batch_size       = compressed.size();
     torch::Tensor output = torch::zeros({batch_size, resolution[0], resolution[1]},
                                         torch::TensorOptions {}.dtype(torch::kFloat32).device(torch::kCUDA));
