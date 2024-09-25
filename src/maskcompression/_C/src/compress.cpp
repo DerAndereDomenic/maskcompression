@@ -4,6 +4,14 @@ namespace maskcompression
 {
 std::vector<torch::Tensor> compress(const torch::Tensor& masks)
 {
+    if(masks.ndimension() != 3)
+    {
+        std::stringstream ss;
+        ss << "Tensor has wrong size of dimensions. Expected ndim==3 (B,H,W) but received ndim=" << masks.ndimension()
+           << " with shape=" << masks.sizes();
+        throw std::runtime_error(ss.str());
+    }
+
     uint32_t batch_size = masks.size(0);
     std::vector<torch::Tensor> result(batch_size);
 
