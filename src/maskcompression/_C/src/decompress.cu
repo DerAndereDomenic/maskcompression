@@ -69,6 +69,26 @@ torch::Tensor decompress(const std::vector<torch::Tensor>& compressed, const std
     for(int batch_id = 0; batch_id < batch_size; ++batch_id)
     {
         auto cumsum = compressed[batch_id];
+
+        if(!cumsum.device().is_cuda())
+        {
+            throw std::runtime_error("maskcompression only works for CUDA capable devices");
+        }
+
+        if(cumsum.device() != device)
+        {
+            std::stringstream ss;
+            ss << "All compressed masks have to be on the same device. Got: " << cumsum.device() << " and " << device;
+            throw std::runtime_error(ss.str());
+        }
+
+        if(cumsum.scalar_type() != torch::kInt32)
+        {
+            std::stringstream ss;
+            ss << "Got unexpected datatype for maskcompression. Expected torch.int32, got " << cumsum.scalar_type();
+            throw std::runtime_error(ss.str());
+        }
+
         detail::decompressImage<<<grid, threads, 0, stream>>>(
             cumsum.packed_accessor32<int32_t, 1, torch::RestrictPtrTraits>(),
             batch_id,

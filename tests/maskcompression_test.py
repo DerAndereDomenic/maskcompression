@@ -98,3 +98,35 @@ def test_wrong_shape():
 
     with pytest.raises(RuntimeError):
         _ = maskcompression.compress(empty)
+
+
+def test_wrong_device():
+    num_masks = 15
+    masks = []
+    for _ in range(num_masks):
+        masks.append(create_mask())
+
+    masks = torch.stack(masks, dim=0)
+
+    compressed = maskcompression.compress(masks)
+
+    for i in range(len(compressed)):
+        compressed[i] = compressed[i].cpu()
+    with pytest.raises(RuntimeError):
+        _ = maskcompression.decompress(compressed, (masks.shape[1], masks.shape[2]))
+
+
+def test_wrong_dtype():
+    num_masks = 15
+    masks = []
+    for _ in range(num_masks):
+        masks.append(create_mask())
+
+    masks = torch.stack(masks, dim=0)
+
+    compressed = maskcompression.compress(masks)
+
+    for i in range(len(compressed)):
+        compressed[i] = compressed[i].to(torch.float32)
+    with pytest.raises(RuntimeError):
+        _ = maskcompression.decompress(compressed, (masks.shape[1], masks.shape[2]))
