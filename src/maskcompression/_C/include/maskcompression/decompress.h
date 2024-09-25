@@ -12,8 +12,11 @@ namespace maskcompression
  *
  * @param compressed List of linear tensors representing the masks
  * @param resolution The resolution of the mask. Has to be constant for all input masks
+ * @param vertical_flip Optional vertical flip of the decompressed image
  *
  * @return (B, H, W) tensor with decoded masks
  */
-torch::Tensor decompress(const std::vector<torch::Tensor>& compressed, const std::array<int, 2>&);
+torch::Tensor decompress(const std::vector<torch::Tensor>& compressed,
+                         const std::array<int, 2>& resolution,
+                         const bool vertical_flip = false);
 }    // namespace maskcompression

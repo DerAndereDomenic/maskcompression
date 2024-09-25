@@ -11,6 +11,7 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m)
           &maskcompression::decompress,
           "compressed"_a,
           "resolution"_a,
+          "vertical_flip"_a = false,
           R"(
     Decompress a list of compressed masks.
     Only works on cuda devices. The compressed tensors are expected to be cuda tensors.
@@ -21,6 +22,8 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m)
         List of linear tensors representing the masks
     resolution 
         The resolution of the mask. Has to be constant for all input masks
+    vertical_flip
+        Optional vertical flip of the decompressed image
 
     Returns
     -------

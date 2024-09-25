@@ -31,6 +31,7 @@ __global__ void decompressImage(const torch::PackedTensorAccessor32<int32_t, 1, 
                                 const uint32_t batch_id,
                                 const uint32_t width,
                                 const uint32_t height,
+                                const bool vertical_flip,
                                 torch::PackedTensorAccessor32<float, 3, torch::RestrictPtrTraits> output)
 {
     auto id = static_cast<int64_t>(blockIdx.x) * static_cast<int64_t>(blockDim.x) + static_cast<int64_t>(threadIdx.x);
@@ -38,7 +39,7 @@ __global__ void decompressImage(const torch::PackedTensorAccessor32<int32_t, 1, 
     for(int32_t tid = id; tid < width * height; tid += num_threads)
     {
         int pixel_x = tid % width;
-        int pixel_y = tid / width;
+        int pixel_y = vertical_flip ? height - tid / width - 1 : tid / width;
 
         uint32_t bin_index =
             binary_search(cumsum, tid + 1) - 1;    // -1 because index 0 encodes if the mask starts with 0 or 1
@@ -50,7 +51,8 @@ __global__ void decompressImage(const torch::PackedTensorAccessor32<int32_t, 1, 
 }
 }    // namespace detail
 
-torch::Tensor decompress(const std::vector<torch::Tensor>& compressed, const std::array<int, 2>& resolution)
+torch::Tensor
+decompress(const std::vector<torch::Tensor>& compressed, const std::array<int, 2>& resolution, const bool vertical_flip)
 {
     if(resolution[0] <= 0 || resolution[1] <= 1)
     {
@@ -101,6 +103,7 @@ torch::Tensor decompress(const std::vector<torch::Tensor>& compressed, const std
             batch_id,
             resolution[1],
             resolution[0],
+            vertical_flip,
             output.packed_accessor32<float, 3, torch::RestrictPtrTraits>());
     }
 

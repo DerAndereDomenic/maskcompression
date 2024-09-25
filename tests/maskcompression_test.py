@@ -93,6 +93,35 @@ def test_roundtrip_batch():
     assert torch.allclose(decompressed, masks)
 
 
+def test_roundtrip_flip():
+    mask = create_mask()
+
+    compressed = maskcompression.compress(mask.unsqueeze(0))
+
+    decompressed = maskcompression.decompress(
+        compressed, (mask.shape[0], mask.shape[1]), True
+    )
+
+    assert torch.allclose(decompressed[0], mask.flip(0))
+
+
+def test_roundtrip_batch_flip():
+    num_masks = 15
+    masks = []
+    for _ in range(num_masks):
+        masks.append(create_mask())
+
+    masks = torch.stack(masks, dim=0)
+
+    compressed = maskcompression.compress(masks)
+
+    decompressed = maskcompression.decompress(
+        compressed, (masks.shape[1], masks.shape[2]), True
+    )
+
+    assert torch.allclose(decompressed, masks.flip(1))
+
+
 def test_wrong_shape():
     empty = torch.zeros((300, 100), device="cuda:0", dtype=torch.uint8)
 
