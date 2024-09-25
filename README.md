@@ -15,8 +15,12 @@ python -m pip instlal --editable .
 ```python
 import maskcompression
 
-compressed = maskcompression.compress(masks)
-decompressed = maskcompression.decompress(compressed, resolution)
+masks = generate_masks() # (B,H,W), device=cuda
+
+compressed = maskcompression.compress(masks) # list(torch.Tensor)
+decompressed = maskcompression.decompress(compressed, 
+                                          resolution, 
+                                          vertical_flip=False) # (B,H,W), device=cuda, dtype=float
 ```
 
 ## Contact
