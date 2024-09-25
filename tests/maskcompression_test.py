@@ -10,7 +10,7 @@ def create_mask():
     height = 1080
     min_size = 20
     max_size = 200
-    mask = torch.zeros((height, width), dtype=torch.float32, device="cuda:0")
+    mask = torch.zeros((height, width), dtype=torch.uint8, device="cuda:0")
 
     num_boxes = 10
     for _ in range(num_boxes):
@@ -26,7 +26,7 @@ def create_mask():
         x2 = min(x1 + box_width, width)
         y2 = min(y1 + box_height, height)
 
-        mask[y1:y2, x1:x2] = 1.0
+        mask[y1:y2, x1:x2] = 255
 
     return mask
 
