@@ -2,6 +2,8 @@ import torch
 import maskcompression
 import random
 
+import pytest
+
 
 def create_mask():
     width = 1920
@@ -89,3 +91,10 @@ def test_roundtrip_batch():
     )
 
     assert torch.allclose(decompressed, masks)
+
+
+def test_wrong_shape():
+    empty = torch.zeros((300, 100), device="cuda:0", dtype=torch.uint8)
+
+    with pytest.raises(RuntimeError):
+        _ = maskcompression.compress(empty)
