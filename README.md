@@ -1,13 +1,14 @@
 # maskcompression
 
 A simple library to encode and decode run length compressed binary mask images.
+A batch of foreground masks (B,H,W, dtype=np.float32) is converted to a list of tensors with `len(compressed) == B`. Each tensor represents a run-length encoded mask (dtype=np.uint32), where the first entry is either 0 or 1 if the first pixel is 0 or 1 and the renaining entries represent a cumulative histogram of number of consecutive foreground or background pixels.
 
 ## Installation
 
-Requires Python >= 3.8 and can be installed via:
+Requires Python >= 3.8, [charonload](https://github.com/vc-bonn/charonload), [pytorch](https://pytorch.org), a C++ and CUDA compiler. Can be installed via:
 
 ```
-python -m pip instlal --editable .
+python -m pip install --editable .
 ```
 
 ## Quick Start
@@ -15,13 +16,17 @@ python -m pip instlal --editable .
 ```python
 import maskcompression
 
-masks = generate_masks() # (B,H,W), device=cuda
+masks = generate_masks() # (B,H,W), device=cuda, dtype=np.float32
 
 compressed = maskcompression.compress(masks) # list(torch.Tensor)
 decompressed = maskcompression.decompress(compressed, 
-                                          resolution, 
+                                          resolution, # (H, W)
                                           vertical_flip=False) # (B,H,W), device=cuda, dtype=uint8, foreground=1
 ```
+
+## Licnese
+
+MIT
 
 ## Contact
 

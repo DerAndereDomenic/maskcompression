@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.27)
 
-project(maskcompression LANGUAGES C CXX CUDA VERSION 0.1.0)
+project(maskcompression LANGUAGES C CXX CUDA VERSION 1.0.0)
 
 option(MASKCOMPRESSION_BUILD_BINDINGS "Build the Python bindings" ON)
 
