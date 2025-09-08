@@ -17,7 +17,7 @@ std::vector<torch::Tensor> compress(const torch::Tensor& masks)
 
     for(int i = 0; i < batch_size; ++i)
     {
-        int32_t leading_one = (int32_t)(masks.index({0, 0, 0}).item<float>() != 0.0f);
+        int32_t leading_one = (int32_t)(masks.index({0, 0, 0}).item<bool>());
         auto compressed     = std::get<2>(
             torch::unique_consecutive(masks.index({i, torch::indexing::Slice(), torch::indexing::Slice()}).flatten(),
                                       /*return_inverse = */ false,
