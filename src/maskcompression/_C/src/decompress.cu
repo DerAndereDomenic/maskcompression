@@ -27,12 +27,13 @@ binary_search(const torch::PackedTensorAccessor32<int32_t, 1, torch::RestrictPtr
     return left;
 }
 
+template<typename scalar_t>
 __global__ void decompressImage(const torch::PackedTensorAccessor32<int32_t, 1, torch::RestrictPtrTraits> cumsum,
                                 const uint32_t batch_id,
                                 const uint32_t width,
                                 const uint32_t height,
                                 const bool vertical_flip,
-                                torch::PackedTensorAccessor32<uint8_t, 3, torch::RestrictPtrTraits> output)
+                                torch::PackedTensorAccessor32<scalar_t, 3, torch::RestrictPtrTraits> output)
 {
     auto id = static_cast<int64_t>(blockIdx.x) * static_cast<int64_t>(blockDim.x) + static_cast<int64_t>(threadIdx.x);
     auto num_threads = static_cast<int64_t>(gridDim.x) * static_cast<int64_t>(blockDim.x);
@@ -46,13 +47,15 @@ __global__ void decompressImage(const torch::PackedTensorAccessor32<int32_t, 1, 
 
         int32_t leading_one = cumsum[0];
 
-        output[batch_id][pixel_y][pixel_x] = ((bin_index + leading_one) & 1) ? 1 : 0;
+        output[batch_id][pixel_y][pixel_x] = ((bin_index + leading_one) & 1) ? scalar_t(1) : scalar_t(0);
     }
 }
 }    // namespace detail
 
-torch::Tensor
-decompress(const std::vector<torch::Tensor>& compressed, const std::array<int, 2>& resolution, const bool vertical_flip)
+torch::Tensor decompress(const std::vector<torch::Tensor>& compressed,
+                         const std::array<int, 2>& resolution,
+                         const bool vertical_flip,
+                         const std::optional<torch::ScalarType> dtype_)
 {
     if(resolution[0] <= 0 || resolution[1] <= 1)
     {
@@ -61,9 +64,11 @@ decompress(const std::vector<torch::Tensor>& compressed, const std::array<int, 2
         throw std::runtime_error(ss.str());
     }
 
+    auto dtype = dtype_ ? *dtype_ : torch::kUInt8;
+
     int batch_size       = compressed.size();
     torch::Tensor output = torch::zeros({batch_size, resolution[0], resolution[1]},
-                                        torch::TensorOptions {}.dtype(torch::kUInt8).device(torch::kCUDA));
+                                        torch::TensorOptions {}.dtype(dtype).device(torch::kCUDA));
 
     auto device = output.device();
 
@@ -98,13 +103,20 @@ decompress(const std::vector<torch::Tensor>& compressed, const std::array<int, 2
             throw std::runtime_error(ss.str());
         }
 
-        detail::decompressImage<<<grid, threads, 0, stream>>>(
-            cumsum.packed_accessor32<int32_t, 1, torch::RestrictPtrTraits>(),
-            batch_id,
-            resolution[1],
-            resolution[0],
-            vertical_flip,
-            output.packed_accessor32<uint8_t, 3, torch::RestrictPtrTraits>());
+        AT_DISPATCH_ALL_TYPES(output.scalar_type(),
+                              "decompress_image",
+                              [&]()
+                              {
+                                  auto output_ = output.packed_accessor32<scalar_t, 3, torch::RestrictPtrTraits>();
+
+                                  detail::decompressImage<<<grid, threads, 0, stream>>>(
+                                      cumsum.packed_accessor32<int32_t, 1, torch::RestrictPtrTraits>(),
+                                      batch_id,
+                                      resolution[1],
+                                      resolution[0],
+                                      vertical_flip,
+                                      output_);
+                              });
     }
 
     AT_CUDA_CHECK(cudaGetLastError());

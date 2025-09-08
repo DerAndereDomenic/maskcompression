@@ -23,5 +23,4 @@ charonload.module_config["_c_maskcompression"] = charonload.Config(
     verbose=False,
 )
 
-# import _c_torchhull  # noqa: F401
-from _c_maskcompression import compress, decompress
+from _c_maskcompression import compress, decompress  # noqa: F401
