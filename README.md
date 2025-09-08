@@ -5,7 +5,13 @@ A batch of foreground masks (B,H,W, dtype=np.float32) is converted to a list of 
 
 ## Installation
 
-Requires Python >= 3.8, [charonload](https://github.com/vc-bonn/charonload), [pytorch](https://pytorch.org), a C++ and CUDA compiler. Can be installed via:
+Requires 
+* Python >= 3.8, 
+* [charonload](https://github.com/vc-bonn/charonload), 
+* [pytorch](https://pytorch.org), 
+* a C++ and CUDA compiler. 
+
+Can be installed via:
 
 ```
 python -m pip install --editable .
@@ -18,15 +24,16 @@ import maskcompression
 
 masks = generate_masks() # (B,H,W), device=cuda, dtype=np.float32
 
-compressed = maskcompression.compress(masks) # list(torch.Tensor)
+compressed = maskcompression.compress(masks) # list(torch.Tensor, dtype=np.int32)
 decompressed = maskcompression.decompress(compressed, 
                                           resolution, # (H, W)
-                                          vertical_flip=False) # (B,H,W), device=cuda, dtype=uint8, foreground=1
+                                          vertical_flip=False,
+                                          dtype=torch.float32) # (B,H,W), device=cuda, foreground=1
 ```
 
 ## Licnese
 
-MIT
+MIT. See [`LICENSE`](LICENSE).
 
 ## Contact
 
