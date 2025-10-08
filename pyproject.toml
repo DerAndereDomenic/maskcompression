@@ -37,3 +37,6 @@ dev = [
     # Other
     "nox",
 ]
+
+[project.urls]
+Homepage = "https://github.com/DerAndereDomenic/maskcompression"
