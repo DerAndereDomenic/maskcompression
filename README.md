@@ -1,9 +1,11 @@
-# maskcompression
+<h1 align="center">maskcompression</h1>
 
 A simple library to encode and decode run length compressed binary mask images.
 A batch of foreground masks (B,H,W, dtype=np.float32) is converted to a list of tensors with `len(compressed) == B`. Each tensor represents a run-length encoded mask (dtype=np.uint32), where the first entry is either 0 or 1 if the first pixel is 0 or 1 and the renaining entries represent a cumulative histogram of number of consecutive foreground or background pixels.
 
 ## Installation
+
+This package only works with CUDA enabled.
 
 Requires 
 * Python >= 3.8, 
@@ -18,6 +20,9 @@ python -m pip install --editable .
 ```
 
 ## Quick Start
+
+* `masks` (B, H, W) tensor of masks
+* `compressed` List of compressed masks of `dtype=np.int32`
 
 ```python
 import maskcompression
